@@ -1,0 +1,17 @@
+
+git config --global user.name "David Perez Martorell"
+git config --global user.email "davidperezmartorell@gmail.com"
+git init
+git add /R
+git commit -m "upload R folder"
+git branch -M main
+#git remote add origin https://github.com/davidperezmartorell/taxon_clean.git
+git push -u origin main --force
+
+
+git add .
+git commit -m "Your commit message"
+git push -u origin main
+
+git fetch origin
+git merge origin/main
