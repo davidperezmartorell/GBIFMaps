@@ -13,6 +13,7 @@
 downloadMap <- function(pais = "", nivel_solicitado){
   # Use sys.source to load functions from mapInlocal.R
   file <- "R/mapInLocal.R"; source(file)
+
   
   MapaBase<-mapInLocal(pais,nivel_solicitado)
 
@@ -28,6 +29,5 @@ downloadMap <- function(pais = "", nivel_solicitado){
       Sys.sleep(1)
     }
   }
-  browser()  
   return(MapaBase)  #Actualiza la info de variable MapaBase
 }
