@@ -39,27 +39,32 @@ library(profvis)
 library(rnoaa) # Libreria para el clima actualizado
 library(ggmap) #Libreria para conocer geolocalizacion
 # Variables iniciales -----------------------------------------------------
-#CArga datos de paises
-paises <- read.csv("inst/paises.csv", stringsAsFactors = FALSE, sep = ";", header = TRUE, fileEncoding="latin1")
+
+#Carga datos de paises
+paises <- read.csv("inst/paises.csv", stringsAsFactors = FALSE, sep = ";", header = TRUE, fileEncoding = "latin1")
 regiones <- NULL #Inicio lista de recinoes en un principio vacia
 provincias <- NULL #Inicio lista de privincias en un principio vacia
 comarcas <- NULL #Inicio lista de privincias en un principio vacia
 localidad <- NULL #Inicio lista de privincias en un principio vacia
 seleccion_pais <- NULL #Inicio
 seleccion_region <- NULL #Inicio
-MapaBase <-readRDS("inst/maps/gadm41_ESP_1_pk.rds")%>% st_as_sf()
+MapaBase <- readRDS("inst/maps/gadm41_ESP_1_pk.rds") %>% st_as_sf()
 React_MapaBase <- reactiveVal(MapaBase) #Variable Mapabase necesaria en todos los espacios
 React_MapaBase_Elevaciones <- reactiveVal() #Variable Mapabase de clima necesaria  cuando agregamos la capa de clima
 React_MapaBase_Rios <- reactiveVal() #Variable Mapabase de rios
 React_FillRows <- reactiveVal("NAME_1") #Variable que define el nivel d la leyenda en funcion del contenido
 React_NumRows <- reactiveVal(34) #Variable que contiene el numero de filas para escoger los colores. 34 es el valor por defecto de AFG
-esta_mapa_local <- "vacio" #Se usa en descarga_mapa como variable de control al buscar si elarchivo esta en local
+esta_mapa_local <- "vacio" #Se usa en downloadMap como variable de control al buscar si elarchivo esta en local
 React_crs_mapabase <- reactiveVal(st_crs(MapaBase)) #Contiene CRQ de GADM seguramente generico
 
 Sys.setlocale(category = "LC_ALL", locale = "es_ES.utf8") # Establecer la configuración regional
 options(encoding = "UTF-8") # Establecer la codificación de caracteres
 
-
+#Related files with functions
+list.files(recursive = TRUE)
+source("R/mapInLocal.R") # Search if map exist in local and download from source or use file from local storage
+source("R/downloadMap.R") # Search if map exist in local and download from source or use file from local storage
+browser()
 # Menu --------------------------------------------------------------------
 ui <- fluidPage(
   
@@ -219,31 +224,8 @@ ui <- fluidPage(
 
 
 
-# Funcion Carga Mapa ------------------------------------------------------
-#Aqui revisamos si el mapa existe en local para no tener que descargarlo de internet
-descarga_mapa <- function(pais = "", nivel_solicitado){
-  
-  #Busca el nivel mayir de carga d mapas
-  esta_mapa_local <- esta_mapa_en_local(pais,nivel_solicitado) #Busca si el archivo esta en local con cierto nivel
-  
-  # Si el archivo de ese mapa con ese nivel no esta en local, y esta disponible, solicitalo a internet
-  if (esta_mapa_local == "vacio"){
-    # Descarga el mapa desde Internet si el archivo no existe en local
-    #Chequea antes de descargar
-    url_base <- "https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_"
-    test_url <- paste0(url_base, pais, "_", nivel_solicitado, ".json")
-    response <- GET(test_url, timeout(2))
-    if (response$status_code == 200){
-      MapaBase <- geodata::gadm(country = pais, level = nivel_solicitado, path = ".")%>% st_as_sf()
-      Sys.sleep(1)
-      React_MapaBase(MapaBase)  #Actualiza la info de variable MapaBase
-    }
-  }
-}
 
-
-
-descarga_mapa_elevaciones <- function(pais="", region="", provincia="", comarca="", localidad=""){
+downloadMap_elevaciones <- function(pais="", region="", provincia="", comarca="", localidad=""){
   
   
   
@@ -319,7 +301,7 @@ descarga_mapa_elevaciones <- function(pais="", region="", provincia="", comarca=
   
 }
 
-descarga_mapa_rios <- function(){
+downloadMap_rios <- function(){
   
   #Geolocalizacion del espacio a analizar
   MapaBase <- React_MapaBase()
@@ -336,19 +318,6 @@ descarga_mapa_rios <- function(){
 }
 
 
-#Este mapa solicita si el mapa esta en local
-esta_mapa_en_local <- function(pais="",nivel){
-  
-  # Comprueba si el archivo del mapa ya existe en local tipo 41 o 36
-  map_file41 <- paste0("gadm41_",pais, "_", nivel, "_pk.rds")
-  map_file36 <- paste0("gadm36_",pais, "_", nivel, "_sp.rds")
-  if (file.exists(map_file41)) {MapaBase <- readRDS(map_file41) %>% st_as_sf();esta_mapa_local = "si"} 
-  else if (file.exists(map_file36)) {MapaBase <- readRDS(map_file36) %>% st_as_sf();esta_mapa_local = "si"}
-  else {esta_mapa_local = "vacio"}
-  
-  React_MapaBase(MapaBase)  #Actualiza la info de variable MapaBase
-  return(esta_mapa_local)  
-}
 
 #Esta funcion es para modificar el valor del FILL_ROWS que servirá para la leyenda
 cambia_fill_rows <- function(nivel){
@@ -414,7 +383,7 @@ server <- function(input, output,session){
     pais_seleccionado2 <- values[index_pais]
     nivel_solicitado=1
     cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
-    descarga_mapa(pais_seleccionado2, nivel_solicitado )
+    downloadMap(pais_seleccionado2, nivel_solicitado )
     
     bloquea_limite_descarga_pais(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
     regiones <- React_MapaBase()
@@ -440,7 +409,7 @@ server <- function(input, output,session){
       pais_seleccionado2 <- values[index_pais]
       nivel_solicitado=2
       cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
-      descarga_mapa(pais_seleccionado2, nivel_solicitado )
+      downloadMap(pais_seleccionado2, nivel_solicitado )
       #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
       MapaBase <- React_MapaBase()
       
@@ -472,7 +441,7 @@ server <- function(input, output,session){
       
       #Esta parte del programa es para descargar pero contiene un if para poder usar el mejor mapa con mayor detalle dscargado
       MapaBase_anterior <- React_MapaBase() # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
-      descarga_mapa(pais_seleccionado2, nivel_solicitado )
+      downloadMap(pais_seleccionado2, nivel_solicitado )
       #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
       MapaBase <- React_MapaBase()
       
@@ -527,12 +496,12 @@ server <- function(input, output,session){
       
       #Esta parte del programa es para descargar pero contiene un if para poder usar el mejor mapa con mayor detalle dscargado
       MapaBase_anterior <- React_MapaBase() # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
-      descarga_mapa(pais_seleccionado2, nivel_solicitado )
+      downloadMap(pais_seleccionado2, nivel_solicitado )
       #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
       MapaBase <- React_MapaBase()
       
       
-      descarga_mapa(pais_seleccionado2, nivel_solicitado )
+      downloadMap(pais_seleccionado2, nivel_solicitado )
       
       if ("NAME_3" %in% colnames(MapaBase)) { #Aqui entra si existe mas detalle
         #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
@@ -587,7 +556,7 @@ server <- function(input, output,session){
       
       #Esta parte del programa es para descargar pero contiene un if para poder usar el mejor mapa con mayor detalle dscargado
       MapaBase_anterior <- React_MapaBase() # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
-      descarga_mapa(pais_seleccionado2, nivel_solicitado )
+      downloadMap(pais_seleccionado2, nivel_solicitado )
       #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
       
       if ("NAME_4" %in% colnames(MapaBase)) { #Aqui entra si existe mas detalle
@@ -626,7 +595,7 @@ server <- function(input, output,session){
     
     nivel_solicitado=1
     cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
-    descarga_mapa("AFG", nivel_solicitado )
+    downloadMap("AFG", nivel_solicitado )
     MapaBase <- React_MapaBase()
     updateSelectInput(session, "seleccion_region")
     updateSelectInput(session, "seleccion_provincia")
@@ -715,7 +684,7 @@ server <- function(input, output,session){
       else if (plot_type == "elevaciones") {
         
         #Solicita mapa. En funcion de la localizacion, se escogera un archivo con mas o menos detalle
-        descarga_mapa_elevaciones(input$seleccion_pais,input$seleccion_region, input$seleccion_provincia, input$seleccion_comarca,  input$seleccion_localidad)
+        downloadMap_elevaciones(input$seleccion_pais,input$seleccion_region, input$seleccion_provincia, input$seleccion_comarca,  input$seleccion_localidad)
         MapaBase_Elevaciones <- React_MapaBase_Elevaciones() #Importamos el mapa del clima
         
         
@@ -739,7 +708,7 @@ server <- function(input, output,session){
         #scale_colour_manual(values = c("#00A600", "#E6E600", "#EAB64E", "#EEB99F", "#F2F2F2"))
       } else if (plot_type == "rios") {# Graficar mapas de rios y límites administrativos
         
-        descarga_mapa_rios()
+        downloadMap_rios()
         MapaBase_Rios <- React_MapaBase_Rios()
         ggplot() + 
           geom_sf(data = MapaBase) +
