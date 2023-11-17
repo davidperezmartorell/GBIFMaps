@@ -10,7 +10,10 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Collate:
-  "downloadMap.R"
-  "downloadRiversMap.R"
-  "mapInLocal.R"
-  "downloadElevationsMap.R"
+  "downloadMap.R"                 #Download main map
+  "downloadRiversMap.R"           #Download rivers map
+  "mapInLocal.R"                  #Search if map is in local
+  "downloadElevationsMap.R"       #Download elevatison map
+  "lockSelection.R"               #Lock buttons availables in shiny to protect program from select with maps not availables
+  "lockLimitDownloadCountry.R"    #Lock maps to be download because they don't exist in internet and not in local
+  "observeResetButton.R"          #Reset all values when press reset button

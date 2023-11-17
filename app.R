@@ -215,87 +215,12 @@ ui <- fluidPage(
 # Definimos options_regiones fuera de la función run_code
 
 
-
-descarga_mapa_rios <- function(){
-  
-  #Geolocalizacion del espacio a analizar
-  MapaBase <- React_MapaBase()
-  crs_mapabase <- st_crs(MapaBase)
-  # Descargar datos de rios y límites administrativos
-  
-  rios <- read_sf("inst/rivers/ne_10m_rivers_lake_centerlines.dbf", encoding = "latin1", stringsAsFactors = FALSE)
-  
-  rios <- st_transform(rios, crs = crs_mapabase ,res=1000)
-  
-  # Unir datos espaciales de rios y límites administrativos
-  MapaBase_Rios  <- sf::st_crop(rios, MapaBase)
-  React_MapaBase_Rios(MapaBase_Rios)
-}
-
-
-#Este mapa solicita si el mapa esta en local
-esta_mapa_en_local <- function(pais="",nivel){
-  
-  # Comprueba si el archivo del mapa ya existe en local tipo 41 o 36
-  map_file41 <- paste0("inst/gadm41_",pais, "_", nivel, "_pk.rds")
-  map_file36 <- paste0("inst/gadm36_",pais, "_", nivel, "_sp.rds")
-  if (file.exists(map_file41)) {MapaBase <- readRDS(map_file41) %>% st_as_sf();esta_mapa_local = "si"} 
-  else if (file.exists(map_file36)) {MapaBase <- readRDS(map_file36) %>% st_as_sf();esta_mapa_local = "si"}
-  else {esta_mapa_local = "vacio"}
-  
-  React_MapaBase(MapaBase)  #Actualiza la info de variable MapaBase
-  return(esta_mapa_local)  
-}
-
 #Esta funcion es para modificar el valor del FILL_ROWS que servirá para la leyenda
 cambia_fill_rows <- function(nivel){
   if (nivel==1){React_FillRows("NAME_1")}
   if (nivel==2){React_FillRows("NAME_2")}
   if (nivel==3){React_FillRows("NAME_3")}
   if (nivel==4){React_FillRows("NAME_4")}
-}
-
-
-
-#Bloquea casillas de selección para evitar solicitar descarga mapas que no existen
-bloquea_limite_descarga_pais <- function(pais=""){
-  
-  url_base <- "https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_"
-  
-  nivel_while = 1;nivel=0; 
-  max_nivel = 4 # Valor máximo para el nivel
-  content <- "" # Inicializar el contenido
-  test_url <- paste0(url_base, pais, "_", nivel_while, ".json")
-  
-  response <- HEAD(test_url)
-  # Comprobar si la salida contiene la cadena "1 received"
-  
-  while(nivel_while <= max_nivel && response$status_code == 200){
-    nivel_while = nivel_while + 1
-    test_url <- paste0(url_base, pais, "_", nivel_while, ".json")
-    response <- HEAD(test_url)
-  }
-  nivel = nivel_while -1
-  rm(content, test_url, response,max_nivel,nivel_while)
-  bloquea_seleccion(nivel) #Deshabilita botones que no deben funcioanr porque no hay
-}
-
-#Funcion que cierra niveles de seleccion segun el nivel que hay
-bloquea_seleccion <- function(nivel){
-  shinyjs::enable("seleccion_localidad");shinyjs::enable("seleccion_comarca");shinyjs::enable("seleccion_provincia");shinyjs::enable("seleccion_region")
-  #Deshabilita botones en funcion de los niveles descargados
-  if (nivel==1){
-    shinyjs::disable("seleccion_localidad");shinyjs::disable("seleccion_comarca");shinyjs::disable("seleccion_provincia");shinyjs::enable("seleccion_region")
-  }
-  if (nivel==2){
-    shinyjs::disable("seleccion_localidad");shinyjs::disable("seleccion_comarca");shinyjs::enable("seleccion_provincia");shinyjs::enable("seleccion_region")
-  }
-  if (nivel==3){
-    shinyjs::disable("seleccion_localidad");shinyjs::enable("seleccion_comarca");shinyjs::enable("seleccion_provincia");shinyjs::enable("seleccion_region")
-  }
-  if (nivel==4){
-    shinyjs::enable("seleccion_localidad");shinyjs::enable("seleccion_comarca");shinyjs::enable("seleccion_provincia");shinyjs::enable("seleccion_region")
-  }
 }
 
 server <- function(input, output,session){
@@ -312,7 +237,7 @@ server <- function(input, output,session){
     nivel_solicitado=1
     cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
     MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
-    bloquea_limite_descarga_pais(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
+    lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
     regiones <- unique(MapaBase$NAME_1)
     render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
     # Actualiza las opciones de seleccion_region
@@ -339,7 +264,7 @@ server <- function(input, output,session){
       MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
       React_MapaBase(MapaBase)
       
-      bloquea_limite_descarga_pais(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
+      lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
       regiones <- unique(MapaBase$NAME_2)
       render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
       # Actualiza las opciones de seleccion_region
@@ -360,7 +285,6 @@ server <- function(input, output,session){
       index_pais <- match(input$seleccion_pais, options)
       pais_seleccionado2 <- values[index_pais]
       nivel_solicitado=3
-      browser()
       #Esta parte del programa es para descargar pero contiene un if para poder usar el mejor mapa con mayor detalle dscargado
       MapaBase_anterior <- React_MapaBase() # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
       MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
@@ -372,7 +296,7 @@ server <- function(input, output,session){
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
         React_MapaBase(MapaBase)
-        bloquea_limite_descarga_pais(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
+        lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
 
         regiones <- unique(MapaBase$NAME_3)
         render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
@@ -386,7 +310,7 @@ server <- function(input, output,session){
         browser()
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
-        bloquea_limite_descarga_pais(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
+        lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
         regiones <- unique(MapaBase$NAME_2) #Modifico a NAME2 porque no ha encontrado un nivel con mas detalle
         nivel_solicitado=2 #Modifico a nivel=2 porque no ha podido encontrarlo
         cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor              
@@ -425,7 +349,7 @@ server <- function(input, output,session){
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
         MapaBase <- filter(MapaBase,MapaBase$NAME_3 == input$seleccion_comarca)
         React_MapaBase(MapaBase)
-        bloquea_limite_descarga_pais(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
+        lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
         regiones <- React_MapaBase()
         regiones <- unique(regiones$NAME_4)
         render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
@@ -439,7 +363,7 @@ server <- function(input, output,session){
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
         React_MapaBase(MapaBase)
-        bloquea_limite_descarga_pais(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
+        lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
         regiones <- React_MapaBase()
         regiones <- unique(regiones$NAME_3) #Modifico a NAME2 porque no ha encontrado un nivel con mas detalle
         nivel_solicitado=3 #Modifico a nivel=2 porque no ha podido encontrarlo
@@ -482,7 +406,7 @@ server <- function(input, output,session){
         MapaBase <- filter(MapaBase,MapaBase$NAME_3 == input$seleccion_comarca)
         MapaBase <- filter(MapaBase,MapaBase$NAME_4 == input$seleccion_localidad)
         React_MapaBase(MapaBase)
-        bloquea_limite_descarga_pais(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
+        lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
         render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
       } else { #Aqui entra si NO existe mas detalle
         # Si no tiene la columna, asignar el valor anterior a MapaBase
@@ -492,7 +416,7 @@ server <- function(input, output,session){
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
         MapaBase <- filter(MapaBase,MapaBase$NAME_3 == input$seleccion_comarca)
         React_MapaBase(MapaBase)
-        bloquea_limite_descarga_pais(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
+        lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
         regiones <- React_MapaBase()
         regiones <- unique(regiones$NAME_3) #Modifico a NAME2 porque no ha encontrado un nivel con mas detalle
         nivel_solicitado=3 #Modifico a nivel=2 porque no ha podido encontrarlo
@@ -504,28 +428,9 @@ server <- function(input, output,session){
       }
     }})
   
-  #Recibe la llamada del boton
-  observeEvent(input$reset, {
-    
-    nivel_solicitado=1
-    cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
-    MapaBase <- downloadMap("AFG", nivel_solicitado )
-    MapaBase <- React_MapaBase()
-    updateSelectInput(session, "seleccion_region")
-    updateSelectInput(session, "seleccion_provincia")
-    updateSelectInput(session, "seleccion_comarca")
-    updateSelectInput(session, "seleccion_localidad")
-    # Reiniciar los valores de los selectInput
-    updateSelectInput(session, "seleccion_region", choices = c("region", regiones[, 2]))
-    updateSelectInput(session, "seleccion_provincia", choices = c("provincia", provincias[, 2]))
-    updateSelectInput(session, "seleccion_comarca", choices = c("comarca", comarcas[, 2]))
-    updateSelectInput(session, "seleccion_localidad", choices = c("localidad", localidad[, 2]))
-    
-    # Reiniciar el valor seleccionado del radioButtons
-    updateRadioButtons(session, "opcion_bio", selected = "Colores")
-    
-    render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
-  })
+  
+  # Call the function with the required arguments
+  observeResetButton(session, input)
   
   # aquí va el código para que acctualice
   run_code <- function() {
@@ -617,9 +522,7 @@ server <- function(input, output,session){
         
         #scale_colour_manual(values = c("#00A600", "#E6E600", "#EAB64E", "#EEB99F", "#F2F2F2"))
       } else if (plot_type == "rios") {# Graficar mapas de rios y límites administrativos
-        
-        descarga_mapa_rios()
-        MapaBase_Rios <- React_MapaBase_Rios()
+        MapaBase_Rios <- downloadRiverMap(MapaBase, st_crs(MapaBase))
         ggplot() + 
           geom_sf(data = MapaBase) +
           geom_sf(data = MapaBase_Rios , color = "blue") 
@@ -638,10 +541,7 @@ server <- function(input, output,session){
     
   } #Fin renderizacion imagen
   
-  
-  
-  
-  
+
 } #Aqui acaba el server <- function(input, output,session){
 
 
