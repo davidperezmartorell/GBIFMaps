@@ -215,85 +215,6 @@ ui <- fluidPage(
 # Definimos options_regiones fuera de la función run_code
 
 
-#Backend de servidor
-
-
-
-descarga_mapa_elevaciones <- function(pais="", region="", provincia="", comarca="", localidad=""){
-  
-  
-  
-  #Mapa de elevaciones. Segun la localizacione scogida, pondra mas o menos detalle
-  
-  if ((region=="region")&&(provincia=="provincia")&&(comarca=="comarca")&&(localidad=="localidad")){
-    filename = 'inst/worldclim/wc2.1_10m_elev.tif'
-    elevation = readGDAL(filename)
-  }#Si estamos a nivel de region
-  else if((region!="region")&&(provincia=="provincia")&&(comarca=="comarca")&&(localidad=="localidad")){
-    filename = 'inst/worldclim/wc2.1_5m_elev.tif'
-    elevation = readGDAL(filename)
-  }#Si estamos a nivel de provincia
-  else if((region!="region")&&(provincia!="provincia")&&(comarca=="comarca")&&(localidad=="localidad")){
-    filename = 'inst/worldclim/wc2.1_2.5m_elev.tif'
-    elevation = readGDAL(filename)
-  }#Si estamos a nivel de comarca o localidad con maximo detalle
-  else {
-    #Geolocalizacion del espacio a analizar
-    MapaBase <- React_MapaBase()
-    
-    # Obtener el altitud y longitud
-    bbox <- st_bbox(MapaBase)
-    x1 = bbox[1]
-    y1 = bbox[4]
-    x2 = bbox[3]
-    y2 = bbox[2]
-    # Obtener los valores de elevación para las coordenadas de interés
-    elevation <- elevation_3s(lat = y1, lon = x1, path = "worldclim/", clip = "none")
-  }
-  # Obtener la matriz de datos del archivo TIF
-  MapaBase_Elevaciones = raster(elevation)
-  
-  
-  #Recorta MapaBaseClima para que sea del tamaño del MapaBase
-  elevaciones1  <- crop(MapaBase_Elevaciones, MapaBase)
-  
-  MapaBase_Elevaciones <- elevaciones1 %>% as("SpatialPixelsDataFrame") %>% as.data.frame()
-  names(MapaBase_Elevaciones)[1] <- "Altura"
-  
-  
-  # Devolver los datos climáticos descargados
-  React_MapaBase_Elevaciones(MapaBase_Elevaciones)
-  
-  
-  #Temperatura (máxima, mínima, media) - códigos de datatypeid TMAX, TMIN, TAVG
-  #Precipitación - código de datatypeid PRCP
-  #Humedad relativa - código de datatypeid RH
-  #Presión atmosférica - código de datatypeid PSXN
-  #Velocidad del viento - código de datatypeid AWND
-  #otros https://www.ncdc.noaa.gov/cdo-web/webservices/v2#dataTypes
-  #otros https://www.ncdc.noaa.gov/cdo-web/webservices/v2
-  #otros digital elevations https://data.noaa.gov/onestop/collections?q=%22digital%20elevation%22
-  # Obtener la ubicación correspondiente a los parámetros de entrada
-  # ubicacion <- switch(nivel,
-  #                     "país" = pais,
-  #                     "región" = paste(pais, region, sep = ", "),
-  #                     "provincia" = paste(pais, provincia, region, sep = ", "),
-  #                     "comarca" = paste(pais, comarca, provincia, region, sep = ", "),
-  #                     "localidad" = paste(pais, localidad, comarca, provincia, region, sep = ", "))
-  # 
-  # # Descargar los datos climáticos utilizando la biblioteca RNOAA
-  # datos_climaticos <- ncdc(
-  #   datasetid = "GHCND",
-  #   locationid = ubicacion,
-  #   datatypeid = datatypeid,
-  #   startdate = "2021-01-01",
-  #   enddate = "2021-12-31",
-  #   limit = 1000
-  # )
-  
-  
-  
-}
 
 descarga_mapa_rios <- function(){
   
@@ -675,10 +596,8 @@ server <- function(input, output,session){
       else if (plot_type == "elevaciones") {
         
         #Solicita mapa. En funcion de la localizacion, se escogera un archivo con mas o menos detalle
-        descarga_mapa_elevaciones(input$seleccion_pais,input$seleccion_region, input$seleccion_provincia, input$seleccion_comarca,  input$seleccion_localidad)
-        MapaBase_Elevaciones <- React_MapaBase_Elevaciones() #Importamos el mapa del clima
-        
-        
+        MapaBase_Elevaciones<-downloadElevationsMap(MapaBase,input$seleccion_pais,input$seleccion_region, input$seleccion_provincia, input$seleccion_comarca,  input$seleccion_localidad)
+
         #Preparo los datos de reprsentacion del mapa
         #Colores para plotear
         #elevation_colours = c("#00A600", "#E6E600", "#EAB64E", "#EEB99F", "#F2F2F2")

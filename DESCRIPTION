@@ -13,3 +13,4 @@ Collate:
   "downloadMap.R"
   "downloadRiversMap.R"
   "mapInLocal.R"
+  "downloadElevationsMap.R"
