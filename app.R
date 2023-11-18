@@ -21,7 +21,6 @@ library(ggplot2)
 library(countrycode)
 library(shiny)
 library(shinyjs)
-library(shinydashboard)
 library(sf)
 library(tidyverse)
 library(raster)
@@ -52,7 +51,7 @@ MapaBase <-readRDS("inst/maps/gadm41_AFG_1_pk.rds")%>% st_as_sf()
 React_MapaBase <- reactiveVal(MapaBase) #Variable Mapabase necesaria en todos los espacios
 React_MapaBase_Elevaciones <- reactiveVal() #Variable Mapabase de clima necesaria  cuando agregamos la capa de clima
 React_MapaBase_Rios <- reactiveVal() #Variable Mapabase de rios
-React_FillRows <- reactiveVal("NAME_1") #Variable que define el nivel d la leyenda en funcion del contenido
+fillRows <- "NAME_1" #Variable que define el nivel d la leyenda en funcion del contenido
 React_NumRows <- reactiveVal(34) #Variable que contiene el numero de filas para escoger los colores. 34 es el valor por defecto de AFG
 esta_mapa_local <- "vacio" #Se usa en descarga_mapa como variable de control al buscar si elarchivo esta en local
 React_crs_mapabase <- reactiveVal(st_crs(MapaBase)) #Contiene CRQ de GADM seguramente generico
@@ -60,9 +59,8 @@ React_crs_mapabase <- reactiveVal(st_crs(MapaBase)) #Contiene CRQ de GADM segura
 Sys.setlocale(category = "LC_ALL", locale = "es_ES.utf8") # Establecer la configuración regional
 options(encoding = "UTF-8") # Establecer la codificación de caracteres
 
-#################################
-#             Menu              #
-#################################
+
+# Menu --------------------------------------------------------------------
 ui <- fluidPage(
   
   useShinyjs(), # Agregar esta función para usar shinyjs
@@ -107,14 +105,11 @@ ui <- fluidPage(
   #Encabezado del codigo con un titulo
   titlePanel(HTML("<h3>Mapas de todo el mundo patrocinado por https://ecosistemaglobal.org/ y Asociacion Focazul</h3>")),
   sidebarLayout(#Panel de herramientas lateral
-    
-    sidebarPanel(
+     sidebarPanel(
       width = 4, 
       #Aqui escogemos el pais segun datos de atchivo y tabla paises
-      
-      selectInput("seleccion_pais", choices = paises$name, textOutput("result_pais"), width = "auto"),
-      
-      fluidRow(
+       selectInput("seleccion_pais", choices = paises$name, textOutput("result_pais"), width = "auto"),
+       fluidRow(
         column(width = 6, selectInput("seleccion_region", choices = c("region", regiones[, 2]),
                                       textOutput("result_region"),width = "100%") ),
         column(width = 6, selectInput("seleccion_provincia",choices = c("provincia", provincias[, 2]),
@@ -126,9 +121,6 @@ ui <- fluidPage(
         column(width = 6, selectInput("seleccion_localidad",choices = c("localidad", localidad[, 2]),
                                       textOutput("result_localidad"), width = "100%") )
       ),
-      
-      
-      
       # #Aqui escogemos si queremos pintar o el clima
       # selectInput("seleccion_clima", "Variable BIO:", 
       #             choices = c("Elevaciones" = "elev",
@@ -139,39 +131,25 @@ ui <- fluidPage(
       #                         "average monthly maximum temperature °C * 10" = "tmax", 
       #                         "otras indicadores bioclimaticos" = "bio", 
       #                         selected = "elev")),
-      
-      
       radioButtons(
         inputId = "opcion_bio",
         label = "Opciones:",
         choices = c("Colours", "Legend", "Elevations","Rivers", "Clean"),
         selected = "Colours"
       ),
-      
       #Boton para resetear contenido
       actionButton("reset", "reset")
-      
-      
-      
-      
     ), #Fin de sidebarPanel
-    
-    
-    
-    
     
     # Carga cuerpo ------------------------------------------------------------
     mainPanel(
       htmlOutput("TittleMap"),
       plotOutput("MapaBase"),
-      footer() #Call the footer screen
-    
-##################################
-#   Fin de interfaz de usuario   #
-##################################
-  ) #Fin de sidebarLayout
-)# Fin del main pannel
+      footer() 
+    ) #Fin de sidebarLayout
+  )# Fin del main pannel
 ) #Fin de fluidPage
+
 
 #CONEXION A LUCAS MAPAS DE SUELOS
 #Instale el paquete "RODBC" en R utilizando el comando install.packages("RODBC")
@@ -183,13 +161,18 @@ ui <- fluidPage(
 #                   believeNRows=FALSE, rows_at_time=500)
 
 
+##################################
+#   Fin de interfaz de usuario   #
+##################################
+# Definimos options_regiones fuera de la función run_code
 
-#Esta funcion es para modificar el valor del FILL_ROWS que servirá para la leyenda
-cambia_fill_rows <- function(nivel){
-  if (nivel==1){React_FillRows("NAME_1")}
-  if (nivel==2){React_FillRows("NAME_2")}
-  if (nivel==3){React_FillRows("NAME_3")}
-  if (nivel==4){React_FillRows("NAME_4")}
+
+#Esta funcion es para modificar el valor del fillRows que servirá para la leyenda
+changeFillRows <- function(nivel){
+  if (nivel==1){fillRows=="NAME_1"}
+  if (nivel==2){fillRows=="NAME_2"}
+  if (nivel==3){fillRows=="NAME_3"}
+  if (nivel==4){fillRows=="NAME_4"}
 }
 
 server <- function(input, output,session){
@@ -204,11 +187,11 @@ server <- function(input, output,session){
     index_pais <- match(input$seleccion_pais, options)
     pais_seleccionado2 <- values[index_pais]
     nivel_solicitado=1
-    cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
+    changeFillRows(nivel_solicitado) # La leyenda depende de este valor
     MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
     lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
     regiones <- unique(MapaBase$NAME_1)
-    render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
+    renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
     # Actualiza las opciones de seleccion_region
     choices <- c("region", regiones)
     updateSelectInput(session, "seleccion_region", choices = choices)
@@ -227,7 +210,7 @@ server <- function(input, output,session){
       index_pais <- match(input$seleccion_pais, options)
       pais_seleccionado2 <- values[index_pais]
       nivel_solicitado=2
-      cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
+      changeFillRows(nivel_solicitado) # La leyenda depende de este valor
       
       MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
       MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
@@ -235,7 +218,7 @@ server <- function(input, output,session){
       
       lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
       regiones <- unique(MapaBase$NAME_2)
-      render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
+      renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
       # Actualiza las opciones de seleccion_region
       choices <- c("provincia", regiones)
       updateSelectInput(session, "seleccion_provincia", choices = choices)
@@ -261,14 +244,14 @@ server <- function(input, output,session){
       # Verificar si MapaBase tiene la columna NAME_2 para poder dar mas detalle
       if ("NAME_2" %in% colnames(MapaBase)) { #Aqui entra si existe mas detalle
         
-        cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
+        changeFillRows(nivel_solicitado) # La leyenda depende de este valor
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
         React_MapaBase(MapaBase)
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
 
         regiones <- unique(MapaBase$NAME_3)
-        render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
+        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         choices <- c("comarca", regiones)
         updateSelectInput(session, "seleccion_comarca", choices = choices)
@@ -282,8 +265,8 @@ server <- function(input, output,session){
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
         regiones <- unique(MapaBase$NAME_2) #Modifico a NAME2 porque no ha encontrado un nivel con mas detalle
         nivel_solicitado=2 #Modifico a nivel=2 porque no ha podido encontrarlo
-        cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor              
-        render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
+        changeFillRows(nivel_solicitado) # La leyenda depende de este valor              
+        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         #choices <- c("comarca", regiones)
         #updateSelectInput(session, "seleccion_comarca", choices = choices)
@@ -312,7 +295,7 @@ server <- function(input, output,session){
       
       if ("NAME_3" %in% colnames(MapaBase)) { #Aqui entra si existe mas detalle
         #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
-        cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
+        changeFillRows(nivel_solicitado) # La leyenda depende de este valor
         MapaBase <- React_MapaBase()
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
@@ -321,7 +304,7 @@ server <- function(input, output,session){
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
         regiones <- React_MapaBase()
         regiones <- unique(regiones$NAME_4)
-        render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
+        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         choices <- c("localidad", regiones)
         updateSelectInput(session, "seleccion_localidad", choices = choices)
@@ -336,8 +319,8 @@ server <- function(input, output,session){
         regiones <- React_MapaBase()
         regiones <- unique(regiones$NAME_3) #Modifico a NAME2 porque no ha encontrado un nivel con mas detalle
         nivel_solicitado=3 #Modifico a nivel=2 porque no ha podido encontrarlo
-        cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor              
-        render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
+        changeFillRows(nivel_solicitado) # La leyenda depende de este valor              
+        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         #choices <- c("comarca", regiones)
         #updateSelectInput(session, "seleccion_comarca", choices = choices)
@@ -368,7 +351,7 @@ server <- function(input, output,session){
       
       if ("NAME_4" %in% colnames(MapaBase)) { #Aqui entra si existe mas detalle
         #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
-        cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor
+        changeFillRows(nivel_solicitado) # La leyenda depende de este valor
         MapaBase <- React_MapaBase()
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
@@ -376,7 +359,7 @@ server <- function(input, output,session){
         MapaBase <- filter(MapaBase,MapaBase$NAME_4 == input$seleccion_localidad)
         React_MapaBase(MapaBase)
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
-        render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
+        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
       } else { #Aqui entra si NO existe mas detalle
         # Si no tiene la columna, asignar el valor anterior a MapaBase
         MapaBase<-MapaBase_anterior
@@ -389,8 +372,8 @@ server <- function(input, output,session){
         regiones <- React_MapaBase()
         regiones <- unique(regiones$NAME_3) #Modifico a NAME2 porque no ha encontrado un nivel con mas detalle
         nivel_solicitado=3 #Modifico a nivel=2 porque no ha podido encontrarlo
-        cambia_fill_rows(nivel_solicitado) # La leyenda depende de este valor              
-        render_mapa(MapaBase) #Llma a la funcion de plotear el mapa
+        changeFillRows(nivel_solicitado) # La leyenda depende de este valor              
+        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         #choices <- c("comarca", regiones)
         #updateSelectInput(session, "seleccion_comarca", choices = choices)
@@ -433,82 +416,8 @@ server <- function(input, output,session){
   
   
   # Función para renderizar el mapa
-  render_mapa <- function(MapaBase) {
-    #Aqui imprimimos el mapa
-    output$MapaBase <- renderPlot({
-      
-      fill_rows <- React_FillRows()  #Importamos la leyenda
-      n_filas = React_NumRows()
-      
-      #Opciones para plotear
-      plot_type <- switch(input$opcion_bio, 
-                          "Colours" = "colores",
-                          "Legend" = "leyenda",
-                          "Elevations" = "elevaciones",
-                          "Rivers" = "rios",
-                          "Clean" = "limpio"
-      )
-      
-      if (plot_type == "colores") {
-        #Código para dibujar el mapa sin colores
-        ggplot(MapaBase) + 
-          geom_sf(aes(fill = .data[[fill_rows]])) +
-          scale_fill_discrete(name = "Provincias") +
-          theme_void()
-      } else if (plot_type == "leyenda") {
-        #Código para dibujar el mapa con leyenda
-        ggplot(MapaBase) + 
-          geom_sf(data = MapaBase) +
-          geom_sf(fill = "white") +
-          geom_sf_text(aes(label = !!as.name(fill_rows)), 
-                       size = 4.5, hjust = 1, maxsize = 4) + 
-          scale_fill_discrete(name = "Regiones") +
-          theme(axis.text = element_text(size = 8), 
-                axis.title.y = element_text(size = 10, margin = margin(t = 0, r = 0, b = 0, l = 0))) 
-        
-      } #Mapa de elevaciones
-      else if (plot_type == "elevaciones") {
-        
-        #Solicita mapa. En funcion de la localizacion, se escogera un archivo con mas o menos detalle
-        MapaBase_Elevaciones<-downloadElevationsMap(MapaBase,input$seleccion_pais,input$seleccion_region, input$seleccion_provincia, input$seleccion_comarca,  input$seleccion_localidad)
+  renderMap(input,output, MapaBase,fillRows,n_filas)
 
-        #Preparo los datos de reprsentacion del mapa
-        #Colores para plotear
-        #elevation_colours = c("#00A600", "#E6E600", "#EAB64E", "#EEB99F", "#F2F2F2")
-        #elevation_colours = c("green","green" "yellow","orange", "brown")
-        #Altura máxima
-        max_altura <- max(MapaBase_Elevaciones$Altura)
-        #Intervalos altura
-        intervalos_altura <- seq(0, max_altura, length.out = 5)
-        
-        # Plotear el mapa utilizando los datos unidos
-        ggplot() + 
-          geom_raster(data = MapaBase_Elevaciones, aes(x, y, fill = Altura)) + 
-          scale_fill_gradient(limits = c(0, max_altura), breaks = intervalos_altura) +
-          labs(fill = input$seleccion_clima) +
-          scale_fill_gradient(low = "yellow", high = "brown") +
-          geom_sf(data = MapaBase, alpha = 0.5, linetype = "dotted", size = 1.5) 
-        
-        #scale_colour_manual(values = c("#00A600", "#E6E600", "#EAB64E", "#EEB99F", "#F2F2F2"))
-      } else if (plot_type == "rios") {# Graficar mapas de rios y límites administrativos
-        MapaBase_Rios <- downloadRiverMap(MapaBase, st_crs(MapaBase))
-        ggplot() + 
-          geom_sf(data = MapaBase) +
-          geom_sf(data = MapaBase_Rios , color = "blue") 
-        
-      } else if (plot_type == "limpio") {
-        #Código por defecto si no se selecciona ninguna opción válida
-        ggplot(MapaBase) + 
-          geom_sf(data = MapaBase) +
-          geom_sf(fill = "white")
-        
-      }
-      
-      
-      
-    }) #Aqui acaba plotear mapa
-    
-  } #Fin renderizacion imagen
   
 
 } #Aqui acaba el server <- function(input, output,session){
