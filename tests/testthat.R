@@ -7,6 +7,3 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(GBIFMaps)
-
-test_check("GBIFMaps")

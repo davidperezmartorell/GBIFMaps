@@ -15,3 +15,6 @@ git push -u origin main
 
 git fetch origin
 git merge origin/main
+
+#Request to Oxygen to recreate files
+roxygen2::roxygenise()

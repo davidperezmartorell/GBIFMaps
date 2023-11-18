@@ -1,19 +1,17 @@
 #' Check if map is in local
-#'
-#' @param pais country selected
-#' @param nivel level of detail. 1,2,3 or 4
-#' @return MapaBase is the file with the MAP if this exists
+#' @param input country selected
+#' @param output level of detail. 1,2,3 or 4
+#' @param seleccion_pais level of detail. 1,2,3 or 4
+#' @param seleccion_region level of detail. 1,2,3 or
+#' @param seleccion_provincia level of detail. 1,2,3 or 4
+#' @param seleccion_comarca level of detail. 1,2,3 or 4
+#' @param seleccion_localidad level of detail. 1,2,3 or 4
+#' @return #No returns,,. It prints in screen result of TITTLE
 #' @export
 #' @examples
-
-
-
-
 # renderTittleMap
 renderTittleMap <- function(input, output, seleccion_pais, seleccion_region, seleccion_provincia, seleccion_comarca, seleccion_localidad) {
   output$TittleMap <- renderText({
-    browser()
-
     # Impresion del título ----------------------------------------------------
     title <- paste0("<strong>Country </strong> ", seleccion_pais)
     if (seleccion_region != "region") {

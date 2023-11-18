@@ -9,7 +9,7 @@
 
 downloadElevationsMap <- function(MapaBase,pais="", region="", provincia="", comarca="", localidad=""){
   #Mapa de elevaciones. Segun la localizacione scogida, pondra mas o menos detalle
-  browser()
+  
   if ((region=="region")&&(provincia=="provincia")&&(comarca=="comarca")&&(localidad=="localidad")){
     filename = 'inst/worldclim/wc2.1_10m_elev.tif'
     elevation = readGDAL(filename)

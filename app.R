@@ -198,8 +198,6 @@ server <- function(input, output,session){
     
   })
   
-  
-  #Aqui actualizamos la lista de provincias
   # Definimos una variable reactiva "provincias_pais" que contiene las provincias del país y la región seleccionadas
   observeEvent(input$seleccion_region, {
     
@@ -225,8 +223,7 @@ server <- function(input, output,session){
       
     }})
   
-  #Aqui actualizamos la lista de comarcas
-  # Definimos una variable reactiva "comarcas_pais" que contiene las comarcas del país y la región seleccionadas
+    # Definimos una variable reactiva "comarcas_pais" que contiene las comarcas del país y la región seleccionadas
   observeEvent(input$seleccion_provincia, {
     
     if (!is.null(input$seleccion_pais) && input$seleccion_pais != "Selecciona un país" && 
@@ -273,8 +270,7 @@ server <- function(input, output,session){
       }
     }})
   
-  #Aqui actualizamos la lista de localidades
-  # Definimos una variable reactiva "localidad_pais" que contiene las comarcas del país y la región seleccionadas
+    # Definimos una variable reactiva "localidad_pais" que contiene las comarcas del país y la región seleccionadas
   observeEvent(input$seleccion_comarca, {
     
     if (!is.null(input$seleccion_pais) && input$seleccion_pais != "Selecciona un país" && 
@@ -327,9 +323,7 @@ server <- function(input, output,session){
       }
     }})
   
-  
-  #Aqui actualizamos la lista de localidades
-  # Definimos una variable reactiva "localidad_pais" que contiene las comarcas del país y la región seleccionadas
+    # Definimos una variable reactiva "localidad_pais" que contiene las comarcas del país y la región seleccionadas
   observeEvent(input$seleccion_localidad, {
     
     if (!is.null(input$seleccion_pais) && input$seleccion_pais != "Selecciona un país" && 
@@ -380,7 +374,6 @@ server <- function(input, output,session){
       }
     }})
   
-  
 # Call the function with the required arguments
   observeResetButton(session, input)
   
@@ -396,7 +389,6 @@ server <- function(input, output,session){
   renderMap(input,output, MapaBase,fillRows,n_filas)
 
 } #Aqui acaba el server <- function(input, output,session){
-
 
 
 #Vincula entrada de usuario con servidor
