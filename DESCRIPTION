@@ -19,4 +19,5 @@ Collate:
   "observeResetButton.R"          # Reset all values when press reset button
   "footer.R"                      # The footer of the screen with info about the updates and versions of the program
   "renderMap.R"                   # Plot MapaBase
+  "renderTittleMap.R"             # Render Tittle Map
 

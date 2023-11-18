@@ -381,44 +381,19 @@ server <- function(input, output,session){
     }})
   
   
-  # Call the function with the required arguments
+# Call the function with the required arguments
   observeResetButton(session, input)
   
-  # aquí va el código para que acctualice
+# aquí va el código para que acctualice
   run_code <- function() {
     flush.console()
   }
   
-  
-  
-  
-  #Aqui imprimimos el titulo del mapa
-  output$TittleMap <- renderText({
-    
-    # Impresion del título ----------------------------------------------------
-    title <- paste0("<strong>Country </strong> ", input$seleccion_pais)
-    if (input$seleccion_region != "region") {
-      title <- paste0(title, "<strong> Region </strong>", input$seleccion_region)
-      if(input$seleccion_provincia != "provincia"){
-        title <- paste0(title, "<strong> Provincia </strong>", input$seleccion_provincia)
-        if(input$seleccion_comarca != "comarca"){
-          title <- paste0(title, "<strong> Comarca </strong>", input$seleccion_comarca)
-          if(input$seleccion_localidad != "localidad"){
-            title <- paste0(title, "<strong> Localidad </strong>", input$seleccion_localidad)
-            #if(input$opcion_bio == TRUE){
-            #  title <- paste0("<strong>Country </strong> ", input$seleccion_pais, " clima ",input$seleccion_clima)
-            #}
-          }
-        }
-      }
-    }
-    HTML(paste0("<h3 style='color: green;'>", title, "</h3>"))    }) 
-  
-  
-  # Función para renderizar el mapa
-  renderMap(input,output, MapaBase,fillRows,n_filas)
+# Función para renderizar el título del mapa
+  renderTittleMap(input, output, input$seleccion_pais, input$seleccion_region,input$seleccion_provincia,input$seleccion_comarca,)
 
-  
+# Función para renderizar el mapa
+  renderMap(input,output, MapaBase,fillRows,n_filas)
 
 } #Aqui acaba el server <- function(input, output,session){
 
