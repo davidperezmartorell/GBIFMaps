@@ -21,6 +21,7 @@ library(ggplot2)
 library(countrycode)
 library(shiny)
 library(shinyjs)
+library(shinydashboard)
 library(sf)
 library(tidyverse)
 library(raster)
@@ -59,8 +60,9 @@ React_crs_mapabase <- reactiveVal(st_crs(MapaBase)) #Contiene CRQ de GADM segura
 Sys.setlocale(category = "LC_ALL", locale = "es_ES.utf8") # Establecer la configuración regional
 options(encoding = "UTF-8") # Establecer la codificación de caracteres
 
-
-# Menu --------------------------------------------------------------------
+#################################
+#             Menu              #
+#################################
 ui <- fluidPage(
   
   useShinyjs(), # Agregar esta función para usar shinyjs
@@ -162,42 +164,14 @@ ui <- fluidPage(
     mainPanel(
       htmlOutput("TittleMap"),
       plotOutput("MapaBase"),
-      
-      
-      # Pie de pagina -----------------------------------------------------------
-      fluidRow(
-        column(12, HTML("<h6> Con este programa vamos a pintar un mapa de la zona que desee, si GADM las tiene disponibles</h6>")),
-        column(12, HTML("<h6> Autor David Perez Martorell davidperezmartorell@gmail.com</h6<>")),
-        column(12, HTML("<h6> Patrocinado por www.ecosistemaglobal.org y Asociacion Focazul</h6>")),
-        column(12, HTML("<h6> Version 1.0 Fecha 13/02/2023 En pruebas.Creación de entorno, formulario y mapa base</h6>")),
-        column(12, HTML("<h6> Version 1.1 13/02/2023 Selección de nivel de detalle</h6>")),
-        column(12, HTML("<h6> Version 1.2 14/02/2023 Agrego seleccion de regiones</h6>")),
-        column(12, HTML("<h6> Version 1.3 15/02/2023 Optimizo seleccion de datos de paises ahora en tabla y título de mapa</h6>")),
-        column(12, HTML("<h6> Version 1.4 17/02/2023 Agrego region y provincia</h6>")),
-        column(12, HTML("<h6> Version 1.5 18/02/2023 Seleccion de region y detalle de provincias</h6>")),
-        column(12, HTML("<h6> Version 1.6 22/02/2023 Ya aparecen los mapas y entro en las provincias</h6>")),
-        column(12, HTML("<h6> Version 1.7 22/02/2023 Entro en comarcas y las muestro en plot</h6>")),                
-        column(12, HTML("<h6> Version 1.7 22/02/2023 Ya entra en comarcas y localidadespendiente entrar en las comarcas</h6>")),
-        column(12, HTML("<h6> Version 1.8 23/02/2023 Modifico menu en la parte superior.</h6>")),
-        column(12, HTML("<h6> Version 1.9 23/02/2023 Trabajando clima. Ya aparece, hace falta usar variables</h6>")),
-        column(12, HTML("<h6> Version 1.10 26/02/2023 Mejora de código interno, elimino casillas de verificación</h6>")),       
-        column(12, HTML("<h6> Version 1.10 28/02/2023 Bloqueo de uso de selectores cuando no hay datos. Se corrije incidencia de ausencia de mapa</h6>")),       
-        column(12, HTML("<h6> Version 2.0 12/03/2023 Renovacion de todo el codigo creando funciones, usando variables Reactivas,</h6>")),   
-        column(12, HTML("<h6> Version 2.1 13/03/2023 Cambio de estilo en botones y optimizo seleccion para incorporar n capas</h6>")),   
-        column(12, HTML("<h6> Version 2.2 15/03/2023 Corrijo error de mapas de localidades con detalle mas fino</h6>")),
-        column(12, HTML("<h6> Version 2.2 15/03/2023 Resuelto problema de carga de mapa en niveles con mas detalle</h6>")),
-        column(12, HTML("<h6> Version 2.3 19/03/2023 Cuanto mas geolocalizado, mas detalle de elevaciones y limitada la descarga y CPU</h6>")),
-        column(12, HTML("<h6> Version 2.4 20/03/2023 Agrego capa de rios</h6>")),   
-        column(12, HTML("<h6> pendiente filtrar mapa segun Latitud y Longitud</h6>")),
-        column(12, HTML("<h6> pendiente agregar mapas de clima, estan los listados pero aun esta la carga bloqueada por seguridad de la aplicacion</h6>")),
-        column(12, HTML("<h6> pendiente mejorar menu con css</h6>")),
-        
-        
-      )#Fin pie de pagina fluidRow
-    ) #Fin de sidebarLayout
-  )# Fin del main pannel
+      footer() #Call the footer screen
+    
+##################################
+#   Fin de interfaz de usuario   #
+##################################
+  ) #Fin de sidebarLayout
+)# Fin del main pannel
 ) #Fin de fluidPage
-
 
 #CONEXION A LUCAS MAPAS DE SUELOS
 #Instale el paquete "RODBC" en R utilizando el comando install.packages("RODBC")
@@ -208,11 +182,6 @@ ui <- fluidPage(
 #con <- odbcConnect("ESDAC", uid="usuario", pwd="contraseña", 
 #                   believeNRows=FALSE, rows_at_time=500)
 
-
-##################################
-#   Fin de interfaz de usuario   #
-##################################
-# Definimos options_regiones fuera de la función run_code
 
 
 #Esta funcion es para modificar el valor del FILL_ROWS que servirá para la leyenda

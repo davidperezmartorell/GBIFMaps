@@ -17,3 +17,4 @@ Collate:
   "lockSelection.R"               #Lock buttons availables in shiny to protect program from select with maps not availables
   "lockLimitDownloadCountry.R"    #Lock maps to be download because they don't exist in internet and not in local
   "observeResetButton.R"          #Reset all values when press reset button
+  "footer.R"                      #The footer of the screen with info about the updates and versions of the program
