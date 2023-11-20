@@ -1,13 +1,10 @@
-Package: GBIFMaps
-Title: Plot maps with elevations, climare political and with GBIF inventories in the world
+Package: gbifmaps
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
 License: MIT + file LICENSE
+Description: Plot maps with elevations, climare political and with GBIF inventories in the world
+Title: GBIF maps and elevations and climate
+Authors@R: person("David", "Perez", email = "davidperezmartorell@gmail.com", role = c("aut", "cre"))
+Maintainer: David Perez <davidperezmartorell@gmail.com>
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
-
-

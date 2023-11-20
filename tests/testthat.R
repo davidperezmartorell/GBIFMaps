@@ -6,4 +6,8 @@
 # * https://r-pkgs.org/testing-design.html#sec-tests-files-overview
 # * https://testthat.r-lib.org/articles/special-files.html
 
-library(testthat)
+devtools::load_all()
+library("testthat")
+source("tests/testthat/gbifTests.R")
+source("testthat/gbifTests.R")
+source("gbifTests.R")

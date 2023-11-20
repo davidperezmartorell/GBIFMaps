@@ -8,6 +8,7 @@
 
 #Este mapa solicita si el mapa esta en local
 downloadRiverMap <- function(MapaBase){
+  crs_mapabase <- st_crs(MapaBase)
   # Assign the coordinate reference system to MapaBase
   MapaBase <- st_set_crs(MapaBase, crs_mapabase)
   

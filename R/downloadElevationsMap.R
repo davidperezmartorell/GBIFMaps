@@ -7,9 +7,9 @@
 #' @examples
 
 
-downloadElevationsMap <- function(MapaBase,pais="", region="", provincia="", comarca="", localidad=""){
+downloadElevationsMap <- function(MapaBase,nivel, pais="", region="", provincia="", comarca="", localidad=""){
   #Mapa de elevaciones. Segun la localizacione scogida, pondra mas o menos detalle
-  
+  nivel_solicitado <- nivel
   if ((region=="region")&&(provincia=="provincia")&&(comarca=="comarca")&&(localidad=="localidad")){
     filename = 'inst/worldclim/wc2.1_10m_elev.tif'
     elevation = readGDAL(filename)
@@ -24,8 +24,8 @@ downloadElevationsMap <- function(MapaBase,pais="", region="", provincia="", com
   }#Si estamos a nivel de comarca o localidad con maximo detalle
   else {
     #Geolocalizacion del espacio a analizar
+    pais_seleccionado2<-pais
     MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
-    
     # Obtener el altitud y longitud
     bbox <- st_bbox(MapaBase)
     x1 = bbox[1]
@@ -33,8 +33,11 @@ downloadElevationsMap <- function(MapaBase,pais="", region="", provincia="", com
     x2 = bbox[3]
     y2 = bbox[2]
     # Obtener los valores de elevación para las coordenadas de interés
-    elevation <- elevation_3s(lat = y1, lon = x1, path = "worldclim/", clip = "none")
+    #elevation <- elevation_30s(lat = y1, lon = x1, path = "worldclim/", clip = "none")
+    elevation <- elevation_30s(country = pais_seleccionado2,lat = y1, lon = x1, path = "worldclim/", clip = "none")
+    #elevation_3s(lat = y1, lon = x1, path = "worldclim/", clip = "none")
   }
+
   # Obtener la matriz de datos del archivo TIF
   MapaBase_Elevaciones = raster(elevation)
   

@@ -47,11 +47,12 @@ comarcas <- NULL #Inicio lista de privincias en un principio vacia
 localidad <- NULL #Inicio lista de privincias en un principio vacia
 seleccion_pais <- NULL #Inicio
 seleccion_region <- NULL #Inicio
+nivel_solicitado <- 1
+fillRows <- "NAME_1" #Variable que define el nivel d la leyenda en funcion del contenido
+
 MapaBase <-readRDS("inst/maps/gadm41_AFG_1_pk.rds")%>% st_as_sf()
-React_MapaBase <- reactiveVal(MapaBase) #Variable Mapabase necesaria en todos los espacios
 React_MapaBase_Elevaciones <- reactiveVal() #Variable Mapabase de clima necesaria  cuando agregamos la capa de clima
 React_MapaBase_Rios <- reactiveVal() #Variable Mapabase de rios
-fillRows <- "NAME_1" #Variable que define el nivel d la leyenda en funcion del contenido
 React_NumRows <- reactiveVal(34) #Variable que contiene el numero de filas para escoger los colores. 34 es el valor por defecto de AFG
 esta_mapa_local <- "vacio" #Se usa en descarga_mapa como variable de control al buscar si elarchivo esta en local
 React_crs_mapabase <- reactiveVal(st_crs(MapaBase)) #Contiene CRQ de GADM seguramente generico
@@ -169,10 +170,10 @@ ui <- fluidPage(
 
 #Esta funcion es para modificar el valor del fillRows que servirá para la leyenda
 changeFillRows <- function(nivel){
-  if (nivel==1){fillRows=="NAME_1"}
-  if (nivel==2){fillRows=="NAME_2"}
-  if (nivel==3){fillRows=="NAME_3"}
-  if (nivel==4){fillRows=="NAME_4"}
+  if (nivel_solicitado==1){fillRows=="NAME_1"}
+  if (nivel_solicitado==2){fillRows=="NAME_2"}
+  if (nivel_solicitado==3){fillRows=="NAME_3"}
+  if (nivel_solicitado==4){fillRows=="NAME_4"}
 }
 
 server <- function(input, output,session){
@@ -191,7 +192,7 @@ server <- function(input, output,session){
     MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
     lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
     regiones <- unique(MapaBase$NAME_1)
-    renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
+    renderMap(input,output, MapaBase,"NAME_1",n_filas) #Llma a la funcion de plotear el mapa
     # Actualiza las opciones de seleccion_region
     choices <- c("region", regiones)
     updateSelectInput(session, "seleccion_region", choices = choices)
@@ -212,11 +213,11 @@ server <- function(input, output,session){
       
       MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
       MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
-      React_MapaBase(MapaBase)
-      
+
       lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
       regiones <- unique(MapaBase$NAME_2)
-      renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
+      
+      renderMap(input,output, MapaBase,"NAME_2",n_filas) #Llma a la funcion de plotear el mapa
       # Actualiza las opciones de seleccion_region
       choices <- c("provincia", regiones)
       updateSelectInput(session, "seleccion_provincia", choices = choices)
@@ -235,7 +236,7 @@ server <- function(input, output,session){
       pais_seleccionado2 <- values[index_pais]
       nivel_solicitado=3
       #Esta parte del programa es para descargar pero contiene un if para poder usar el mejor mapa con mayor detalle dscargado
-      MapaBase_anterior <- React_MapaBase() # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
+      MapaBase_anterior <- MapaBase # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
       MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
 
       # Verificar si MapaBase tiene la columna NAME_2 para poder dar mas detalle
@@ -244,11 +245,10 @@ server <- function(input, output,session){
         changeFillRows(nivel_solicitado) # La leyenda depende de este valor
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
-        React_MapaBase(MapaBase)
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
 
         regiones <- unique(MapaBase$NAME_3)
-        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
+        renderMap(input,output, MapaBase,"NAME_3",n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         choices <- c("comarca", regiones)
         updateSelectInput(session, "seleccion_comarca", choices = choices)
@@ -256,14 +256,14 @@ server <- function(input, output,session){
         # Si no tiene la columna, asignar el valor anterior a MapaBase
         MapaBase<-MapaBase_anterior
 
-        browser()
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
         regiones <- unique(MapaBase$NAME_2) #Modifico a NAME2 porque no ha encontrado un nivel con mas detalle
         nivel_solicitado=2 #Modifico a nivel=2 porque no ha podido encontrarlo
-        changeFillRows(nivel_solicitado) # La leyenda depende de este valor              
-        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
+        changeFillRows(nivel_solicitado) # La leyenda depende de este valor     
+        browser()
+        renderMap(input,output, MapaBase,"NAME_2",n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         #choices <- c("comarca", regiones)
         #updateSelectInput(session, "seleccion_comarca", choices = choices)
@@ -285,38 +285,34 @@ server <- function(input, output,session){
       nivel_solicitado=4
       
       #Esta parte del programa es para descargar pero contiene un if para poder usar el mejor mapa con mayor detalle dscargado
-      MapaBase_anterior <- React_MapaBase() # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
+      MapaBase_anterior <- MapaBase # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
       MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
 
-      
+      browser()
       if ("NAME_3" %in% colnames(MapaBase)) { #Aqui entra si existe mas detalle
         #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
         changeFillRows(nivel_solicitado) # La leyenda depende de este valor
-        MapaBase <- React_MapaBase()
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
         MapaBase <- filter(MapaBase,MapaBase$NAME_3 == input$seleccion_comarca)
-        React_MapaBase(MapaBase)
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
-        regiones <- React_MapaBase()
+        regiones <- MapaBase
         regiones <- unique(regiones$NAME_4)
-        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
+        renderMap(input,output, MapaBase,"NAME_4",n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         choices <- c("localidad", regiones)
         updateSelectInput(session, "seleccion_localidad", choices = choices)
       } else { #Aqui entra si NO existe mas detalle
         # Si no tiene la columna, asignar el valor anterior a MapaBase
         MapaBase<-MapaBase_anterior
-        MapaBase <- React_MapaBase()
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
-        React_MapaBase(MapaBase)
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
-        regiones <- React_MapaBase()
+        regiones <- MapaBase
         regiones <- unique(regiones$NAME_3) #Modifico a NAME2 porque no ha encontrado un nivel con mas detalle
         nivel_solicitado=3 #Modifico a nivel=2 porque no ha podido encontrarlo
         changeFillRows(nivel_solicitado) # La leyenda depende de este valor              
-        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
+        renderMap(input,output, MapaBase,"NAME_3",n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         #choices <- c("comarca", regiones)
         #updateSelectInput(session, "seleccion_comarca", choices = choices)
@@ -339,35 +335,31 @@ server <- function(input, output,session){
       nivel_solicitado=4
       
       #Esta parte del programa es para descargar pero contiene un if para poder usar el mejor mapa con mayor detalle dscargado
-      MapaBase_anterior <- React_MapaBase() # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
+      MapaBase_anterior <- MapaBase # Copiar el valor actual de MapaBase en una variable temporal para devisar cuando no trae mapas con mas detalle
       MapaBase <- downloadMap(pais_seleccionado2, nivel_solicitado )
       #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
-      
+      browser()
       if ("NAME_4" %in% colnames(MapaBase)) { #Aqui entra si existe mas detalle
         #Tras solicitar un nuevo mapa, lo descargamos, lo filtramos y actualizamos variable general MapaBase
         changeFillRows(nivel_solicitado) # La leyenda depende de este valor
-        MapaBase <- React_MapaBase()
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
         MapaBase <- filter(MapaBase,MapaBase$NAME_3 == input$seleccion_comarca)
         MapaBase <- filter(MapaBase,MapaBase$NAME_4 == input$seleccion_localidad)
-        React_MapaBase(MapaBase)
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
-        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
+        renderMap(input,output, MapaBase,"NAME_4",n_filas) #Llma a la funcion de plotear el mapa
       } else { #Aqui entra si NO existe mas detalle
         # Si no tiene la columna, asignar el valor anterior a MapaBase
         MapaBase<-MapaBase_anterior
-        MapaBase <- React_MapaBase()
         MapaBase <- filter(MapaBase,MapaBase$NAME_1 == input$seleccion_region)
         MapaBase <- filter(MapaBase,MapaBase$NAME_2 == input$seleccion_provincia)
         MapaBase <- filter(MapaBase,MapaBase$NAME_3 == input$seleccion_comarca)
-        React_MapaBase(MapaBase)
         lockLimitDownloadCountry(pais_seleccionado2) # Deshabilita botones que no deben funcionar porque no hay
-        regiones <- React_MapaBase()
+        regiones <- MapaBase
         regiones <- unique(regiones$NAME_3) #Modifico a NAME2 porque no ha encontrado un nivel con mas detalle
         nivel_solicitado=3 #Modifico a nivel=2 porque no ha podido encontrarlo
         changeFillRows(nivel_solicitado) # La leyenda depende de este valor              
-        renderMap(input,output, MapaBase,fillRows,n_filas) #Llma a la funcion de plotear el mapa
+        renderMap(input,output, MapaBase,"NAME_4",n_filas) #Llma a la funcion de plotear el mapa
         # Actualiza las opciones de seleccion_region
         #choices <- c("comarca", regiones)
         #updateSelectInput(session, "seleccion_comarca", choices = choices)
@@ -380,10 +372,12 @@ server <- function(input, output,session){
 # aquí va el código para que acctualice
   run_code <- function() {
     flush.console()
+    
+    cat("seleccion : ", input$seleccion_pais, " y el pasis2", pais_seleccionado2)
   }
   
 # Función para renderizar el título del mapa
-  renderTittleMap(input, output, input$seleccion_pais, input$seleccion_region,input$seleccion_provincia,input$seleccion_comarca,)
+  renderTittleMap(input, output)
 
 # Función para renderizar el mapa
   renderMap(input,output, MapaBase,fillRows,n_filas)

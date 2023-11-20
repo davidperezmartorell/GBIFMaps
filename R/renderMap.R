@@ -14,8 +14,6 @@
 renderMap <- function(input, output, MapaBase,fill_rows,n_filas) {
   #Aqui imprimimos el mapa
   output$MapaBase <- renderPlot({
-    
-
     #Opciones para plotear
     plot_type <- switch(input$opcion_bio, 
                         "Colours" = "colores",
@@ -24,7 +22,7 @@ renderMap <- function(input, output, MapaBase,fill_rows,n_filas) {
                         "Rivers" = "rios",
                         "Clean" = "limpio"
     )
-    
+
     if (plot_type == "colores") {
       #Código para dibujar el mapa sin colores
       ggplot(MapaBase) + 
@@ -46,7 +44,7 @@ renderMap <- function(input, output, MapaBase,fill_rows,n_filas) {
     else if (plot_type == "elevaciones") {
       
       #Solicita mapa. En funcion de la localizacion, se escogera un archivo con mas o menos detalle
-      MapaBase_Elevaciones<-downloadElevationsMap(MapaBase,input$seleccion_pais,input$seleccion_region, input$seleccion_provincia, input$seleccion_comarca,  input$seleccion_localidad)
+      MapaBase_Elevaciones<-downloadElevationsMap(MapaBase,nivel, input$seleccion_pais,input$seleccion_region, input$seleccion_provincia, input$seleccion_comarca,  input$seleccion_localidad)
       
       #Preparo los datos de reprsentacion del mapa
       #Colores para plotear
